@@ -11,7 +11,7 @@
     <Project Path="src/Services/Notes/Fundoo.Notes.Infrastructure/Fundoo.Notes.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/src/Services/Notification/">
-    <Project Path="Fundoo.Notification.Infrastructure/Fundoo.Notification.Infrastructure.csproj" />
+      <Project Path="src/Services/Notification/Fundoo.Notification.Infrastructure/Fundoo.Notification.Infrastructure.csproj" />
     <Project Path="src/Services/Notification/Fundoo.Notification.Api/Fundoo.Notification.Api.csproj" />
     <Project Path="src/Services/Notification/Fundoo.Notification.Application/Fundoo.Notification.Application.csproj" />
     <Project Path="src/Services/Notification/Fundoo.Notification.Domain/Fundoo.Notification.Domain.csproj" />

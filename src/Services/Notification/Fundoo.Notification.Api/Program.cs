@@ -42,9 +42,6 @@ builder.Services.AddSwaggerGen(options =>
 // Register Notification Service
 builder.Services.AddTransient<IEmailSender, SmtpEmailService>();
 
-builder.Services.AddScoped<
-    INotificationIdempotencyRepository,
-    NotificationIdempotencyRepository>();
 
 builder.Services.AddScoped<INotificationService, NotificationService>();
 

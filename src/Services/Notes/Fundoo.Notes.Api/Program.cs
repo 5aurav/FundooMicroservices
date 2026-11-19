@@ -1,5 +1,7 @@
 using Fundoo.Notes.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Fundoo.Notes.Api.HealthChecks;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
@@ -15,11 +17,16 @@ Console.WriteLine(
 // Add services to the container.
 
 builder.Services.AddControllers();
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
 
 builder.Services.AddNotesInfrastructure(builder.Configuration);
+builder.Services
+    .AddHealthChecks()
+    .AddCheck<NotesDatabaseHealthCheck>(
+        "notes-database",
+        tags: new[] { "ready" });
 
 //jwt configuration
 var jwt = builder.Configuration.GetSection("Jwt");
@@ -100,5 +107,15 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = _ => false
+});
+
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready")
+});
 
 app.Run();

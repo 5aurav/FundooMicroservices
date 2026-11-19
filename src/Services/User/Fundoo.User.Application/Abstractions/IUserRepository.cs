@@ -21,9 +21,14 @@ namespace Fundoo.User.Application.Abstractions
         Task InvalidatePasswordResetTokensAsync(Guid userId, DateTime usedAtUtc,
             CancellationToken cancellationToken = default);
 
-        Task UpdatePasswordAsync(AppUser user, string passwordHash,
-            DateTime updatedAtUtc,
+
+        Task<bool> ConsumePasswordResetTokenAndUpdatePasswordAsync(
+            Guid userId,
+            Guid resetTokenId,
+            string passwordHash,
+            DateTime nowUtc,
             CancellationToken cancellationToken = default);
+
 
         Task AddRefreshTokenAsync(
             RefreshToken token,
@@ -33,9 +38,18 @@ namespace Fundoo.User.Application.Abstractions
             string tokenHash,
             CancellationToken cancellationToken = default);
 
-        Task RevokeRefreshTokensAsync(
-            Guid userId,
+
+        Task RevokeRefreshTokenFamilyAsync(
+            Guid familyId,
             DateTime revokedAtUtc,
             CancellationToken cancellationToken = default);
+
+
+        Task<bool> RotateRefreshTokenAsync(
+            Guid oldTokenId,
+            DateTime nowUtc,
+            RefreshToken newToken,
+            CancellationToken cancellationToken = default);
+
     }
 }

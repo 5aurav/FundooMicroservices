@@ -11,6 +11,6 @@ namespace Fundoo.User.Infrastructure.Security
         public string RecipientEmail { get; set; } = string.Empty;
         public string RecipientName { get; set; } = string.Empty;
         public string ResetToken { get; set; } = string.Empty;
-        public string IdempotencyKey { get; internal set; }
+        public string IdempotencyKey { get; internal set; } = string.Empty;
     }
 }

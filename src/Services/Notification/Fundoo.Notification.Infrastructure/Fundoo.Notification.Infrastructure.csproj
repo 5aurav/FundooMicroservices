@@ -20,8 +20,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\Services\Notification\Fundoo.Notification.Application\Fundoo.Notification.Application.csproj" />
-    <ProjectReference Include="..\src\Services\Notification\Fundoo.Notification.Domain\Fundoo.Notification.Domain.csproj" />
+    <ProjectReference Include="..\Fundoo.Notification.Application\Fundoo.Notification.Application.csproj" />
+    <ProjectReference Include="..\Fundoo.Notification.Domain\Fundoo.Notification.Domain.csproj" />
   </ItemGroup>
 
 </Project>

@@ -81,17 +81,67 @@ namespace Fundoo.User.Infrastructure.Security
             }
         }
 
-        public async Task UpdatePasswordAsync(AppUser user, string passwordHash,
-            DateTime updatedAtUtc,
+
+        public async Task<bool> ConsumePasswordResetTokenAndUpdatePasswordAsync(
+            Guid userId,
+            Guid resetTokenId,
+            string passwordHash,
+            DateTime nowUtc,
             CancellationToken cancellationToken = default)
         {
-            user.PasswordHash = passwordHash;
-            user.UpdatedAtUtc = updatedAtUtc;
+            await using var transaction =
+                await _context.Database.BeginTransactionAsync(cancellationToken);
 
-            _context.Users.Update(user);
+            var tokenUpdated = await _context.PasswordResetTokens
+                .Where(token =>
+                    token.Id == resetTokenId &&
+                    token.UserId == userId &&
+                    token.UsedAtUtc == null &&
+                    token.ExpiresAtUtc > nowUtc)
+                .ExecuteUpdateAsync(
+                    setters => setters.SetProperty(
+                        token => token.UsedAtUtc,
+                        (DateTime?)nowUtc),
+                    cancellationToken);
 
-            await _context.SaveChangesAsync(cancellationToken);
+            if (tokenUpdated != 1)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return false;
+            }
+
+            var userUpdated = await _context.Users
+                .Where(user =>
+                    user.Id == userId &&
+                    user.IsActive)
+                .ExecuteUpdateAsync(
+                    setters => setters
+                        .SetProperty(user => user.PasswordHash, passwordHash)
+                        .SetProperty(user => user.UpdatedAtUtc, nowUtc),
+                    cancellationToken);
+
+            if (userUpdated != 1)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return false;
+            }
+
+            await _context.PasswordResetTokens
+                .Where(token =>
+                    token.UserId == userId &&
+                    token.Id != resetTokenId &&
+                    token.UsedAtUtc == null)
+                .ExecuteUpdateAsync(
+                    setters => setters.SetProperty(
+                        token => token.UsedAtUtc,
+                        (DateTime?)nowUtc),
+                    cancellationToken);
+
+            await transaction.CommitAsync(cancellationToken);
+
+            return true;
         }
+
 
         public async Task AddRefreshTokenAsync(
             RefreshToken token,
@@ -107,27 +157,69 @@ namespace Fundoo.User.Infrastructure.Security
             CancellationToken cancellationToken = default)
         {
             return await _context.RefreshTokens
-                .FirstOrDefaultAsync(
-                    token => token.TokenHash == tokenHash,
-                    cancellationToken);
+    .AsNoTracking()
+    .FirstOrDefaultAsync(
+        token => token.TokenHash == tokenHash,
+        cancellationToken);
         }
 
-        public async Task RevokeRefreshTokensAsync(
-            Guid userId,
+
+        public async Task<bool> RotateRefreshTokenAsync(
+            Guid oldTokenId,
+            DateTime nowUtc,
+            RefreshToken newToken,
+            CancellationToken cancellationToken = default)
+        {
+            await using var transaction =
+                await _context.Database.BeginTransactionAsync(cancellationToken);
+
+            var updated = await _context.RefreshTokens
+                .Where(token =>
+                    token.Id == oldTokenId &&
+                    token.RevokedAtUtc == null &&
+                    token.ExpiresAtUtc > nowUtc)
+                .ExecuteUpdateAsync(
+                    setters => setters
+                        .SetProperty(token => token.RevokedAtUtc, nowUtc)
+                        .SetProperty(
+                            token => token.ReplacedByTokenHash,
+                            newToken.TokenHash),
+                    cancellationToken);
+
+            if (updated != 1)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return false;
+            }
+
+            await _context.RefreshTokens.AddAsync(
+                newToken,
+                cancellationToken);
+
+            await _context.SaveChangesAsync(cancellationToken);
+
+            await transaction.CommitAsync(cancellationToken);
+
+            return true;
+        }
+
+
+
+        public async Task RevokeRefreshTokenFamilyAsync(
+            Guid familyId,
             DateTime revokedAtUtc,
             CancellationToken cancellationToken = default)
         {
-            var tokens = await _context.RefreshTokens
+            await _context.RefreshTokens
                 .Where(token =>
-                    token.UserId == userId &&
-                    token.RevokedAtUtc == null &&
-                    token.ExpiresAtUtc > revokedAtUtc)
-                .ToListAsync(cancellationToken);
-
-            foreach (var token in tokens)
-            {
-                token.RevokedAtUtc = revokedAtUtc;
-            }
+                    token.FamilyId == familyId &&
+                    token.RevokedAtUtc == null)
+                .ExecuteUpdateAsync(
+                    setters => setters.SetProperty(
+                        token => token.RevokedAtUtc,
+                        revokedAtUtc),
+                    cancellationToken);
         }
+
     }
 }

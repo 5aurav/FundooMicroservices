@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Fundoo.User.Api.Controllers
 {
     [ApiController]
-    [Microsoft.AspNetCore.Mvc.ApiVersion("1.0")]
+    [ApiVersion("1.0")]
     [Route("api/v{version:apiVersion}/auth")]
     public class AuthController : ControllerBase
     {

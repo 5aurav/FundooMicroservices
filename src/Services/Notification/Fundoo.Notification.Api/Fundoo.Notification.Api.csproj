@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\Fundoo.Notification.Infrastructure\Fundoo.Notification.Infrastructure.csproj" />
+    <ProjectReference Include="..\Fundoo.Notification.Infrastructure\Fundoo.Notification.Infrastructure.csproj" />
     <ProjectReference Include="..\Fundoo.Notification.Application\Fundoo.Notification.Application.csproj" />
   </ItemGroup>
 

@@ -46,8 +46,7 @@ namespace Fundoo.User.Infrastructure.Security
                     .IsRequired()
                     .HasMaxLength(64);
 
-                e.HasIndex(token => token.TokenHash)
-                    .IsUnique();
+                e.HasIndex(token => token.FamilyId);
 
                 e.Property(token => token.ReplacedByTokenHash)
                     .HasMaxLength(64);

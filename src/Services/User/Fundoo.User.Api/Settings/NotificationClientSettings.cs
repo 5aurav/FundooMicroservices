@@ -16,7 +16,7 @@ public sealed class NotificationClientSettings
             throw new InvalidOperationException(
                 $"{SectionName}:BaseUrl must be an absolute URL.");
 
-        if (AttemptTimeoutSeconds is < 1 or > 51)
+        if (AttemptTimeoutSeconds is < 1 or > 15)
             throw new InvalidOperationException(
                 $"{SectionName}:AttemptTimeoutSeconds must be 1-15.");
 

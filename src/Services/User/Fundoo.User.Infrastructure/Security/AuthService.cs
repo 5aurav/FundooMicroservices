@@ -184,9 +184,20 @@ namespace Fundoo.User.Infrastructure.Security
             }
         }
 
-        public async Task<bool> ResetPasswordAsync(string email, string token, string newPassword,
+
+        public async Task<bool> ResetPasswordAsync(
+            string email,
+            string token,
+            string newPassword,
             CancellationToken cancellationToken = default)
         {
+            if (string.IsNullOrWhiteSpace(email) ||
+                string.IsNullOrWhiteSpace(token) ||
+                string.IsNullOrWhiteSpace(newPassword))
+            {
+                return false;
+            }
+
             var normalizedEmail = email.Trim().ToUpperInvariant();
 
             var user = await _userRepository.GetByNormalizedEmailAsync(
@@ -194,19 +205,16 @@ namespace Fundoo.User.Infrastructure.Security
                 cancellationToken);
 
             if (user is null || !user.IsActive)
-                return false;
-
-            if (string.IsNullOrWhiteSpace(token) ||
-                string.IsNullOrWhiteSpace(newPassword))
             {
                 return false;
             }
 
-            var tokenHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
+            var tokenHash = Convert.ToHexString(
+                SHA256.HashData(Encoding.UTF8.GetBytes(token)));
 
             var resetToken = await _userRepository.GetPasswordResetTokenByHashAsync(
-                    tokenHash,
-                    cancellationToken);
+                tokenHash,
+                cancellationToken);
 
             var now = DateTime.UtcNow;
 
@@ -220,18 +228,15 @@ namespace Fundoo.User.Infrastructure.Security
 
             var newPasswordHash = _passwordHasher.Hash(newPassword);
 
-            await _userRepository.UpdatePasswordAsync(
-                user,
-                newPasswordHash,
-                now,
-                cancellationToken);
-
-            resetToken.UsedAtUtc = now;
-
-            await _userRepository.SaveChangesAsync(cancellationToken);
-
-            return true;
+            return await _userRepository
+                .ConsumePasswordResetTokenAndUpdatePasswordAsync(
+                    user.Id,
+                    resetToken.Id,
+                    newPasswordHash,
+                    now,
+                    cancellationToken);
         }
+
 
         public async Task<AuthResult> LoginV2Async(
             string email,
@@ -272,10 +277,13 @@ namespace Fundoo.User.Infrastructure.Security
                 var now = DateTime.UtcNow;
                 var expiry = now.AddDays(30);
 
+                var familyId = Guid.NewGuid();
+
                 var refreshTokenEntity = new RefreshToken
                 {
                     Id = Guid.NewGuid(),
                     UserId = user.Id,
+                    FamilyId = familyId,
                     TokenHash = tokenHash,
                     CreatedAtUtc = now,
                     ExpiresAtUtc = expiry
@@ -302,6 +310,7 @@ namespace Fundoo.User.Infrastructure.Security
             };
         }
 
+
         public async Task<AuthResult> RefreshAccessTokenAsync(
             string refreshToken,
             CancellationToken cancellationToken = default)
@@ -324,12 +333,43 @@ namespace Fundoo.User.Infrastructure.Security
 
             var now = DateTime.UtcNow;
 
-            if (existingToken is null || !existingToken.IsActive)
+            if (existingToken is null)
             {
                 return new AuthResult
                 {
                     IsSuccess = false,
+                    Message = "Refresh token is invalid."
+                };
+            }
+
+            if (existingToken.RevokedAtUtc is not null)
+            {
+                if (!string.IsNullOrWhiteSpace(existingToken.ReplacedByTokenHash))
+                {
+                    await _userRepository.RevokeRefreshTokenFamilyAsync(
+                        existingToken.FamilyId,
+                        now,
+                        cancellationToken);
+
+                    _logger.LogWarning(
+                        "Refresh token replay detected for user {UserId}, family {FamilyId}",
+                        existingToken.UserId,
+                        existingToken.FamilyId);
+                }
+
+                return new AuthResult
+                {
+                    IsSuccess = false,
                     Message = "Refresh token is invalid, expired, or revoked."
+                };
+            }
+
+            if (existingToken.ExpiresAtUtc <= now)
+            {
+                return new AuthResult
+                {
+                    IsSuccess = false,
+                    Message = "Refresh token has expired."
                 };
             }
 
@@ -352,37 +392,63 @@ namespace Fundoo.User.Infrastructure.Security
             var newTokenHash = Convert.ToHexString(
                 SHA256.HashData(Encoding.UTF8.GetBytes(newRawToken)));
 
-            var newExpiry = now.AddDays(30);
-
-            existingToken.RevokedAtUtc = now;
-            existingToken.ReplacedByTokenHash = newTokenHash;
+            var expiry = now.AddDays(30);
 
             var newRefreshToken = new RefreshToken
             {
                 Id = Guid.NewGuid(),
                 UserId = user.Id,
+                FamilyId = existingToken.FamilyId,
                 TokenHash = newTokenHash,
                 CreatedAtUtc = now,
-                ExpiresAtUtc = newExpiry
+                ExpiresAtUtc = expiry
             };
 
-            await _userRepository.AddRefreshTokenAsync(
+            var rotated = await _userRepository.RotateRefreshTokenAsync(
+                existingToken.Id,
+                now,
                 newRefreshToken,
                 cancellationToken);
 
-            var newAccessToken = _tokenService.CreateAccessToken(user);
 
-            await _userRepository.SaveChangesAsync(cancellationToken);
+            if (!rotated)
+            {
+                var latestToken = await _userRepository.GetRefreshTokenByHashAsync(
+                    tokenHash,
+                    cancellationToken);
+
+                if (latestToken is not null &&
+                    latestToken.RevokedAtUtc is not null &&
+                    !string.IsNullOrWhiteSpace(latestToken.ReplacedByTokenHash))
+                {
+                    await _userRepository.RevokeRefreshTokenFamilyAsync(
+                        latestToken.FamilyId,
+                        DateTime.UtcNow,
+                        cancellationToken);
+
+                    _logger.LogWarning(
+                        "Concurrent refresh token replay detected for user {UserId}, family {FamilyId}",
+                        latestToken.UserId,
+                        latestToken.FamilyId);
+                }
+
+                return new AuthResult
+                {
+                    IsSuccess = false,
+                    Message = "Refresh token has already been used or expired."
+                };
+            }
 
             return new AuthResult
             {
                 IsSuccess = true,
                 Message = "Access token refreshed successfully.",
                 UserId = user.Id,
-                AccessToken = newAccessToken,
+                AccessToken = _tokenService.CreateAccessToken(user),
                 RefreshToken = newRawToken,
-                RefreshTokenExpiresAtUtc = newExpiry
+                RefreshTokenExpiresAtUtc = expiry
             };
         }
+
     }
 }

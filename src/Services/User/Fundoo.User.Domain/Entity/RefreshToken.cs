@@ -6,6 +6,9 @@
 
         public Guid UserId { get; set; }
 
+        public Guid FamilyId { get; set; }
+
+
         // Store the SHA-256 hash, never the original refresh token.
         public string TokenHash { get; set; } = string.Empty;
 
