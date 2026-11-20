@@ -1,4 +1,7 @@
-﻿using Fundoo.User.Application.Abstractions;
+﻿using Fundoo.Common.DependencyInjection;
+using Fundoo.User.Application.Abstractions;
+using Fundoo.User.Application.DTO;
+using Fundoo.User.Infrastructure.Messaging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,10 +20,18 @@ namespace Fundoo.User.Infrastructure.Security
                 options.UseNpgsql(connectionString));
 
             services.AddScoped<IUserRepository, UserRepository>();
-            services.AddScoped<IPasswordHasher, BCryptPasswordHasher>();
+            services.AddScoped<IPasswordHasher, PasswordHasher>();
             services.AddScoped<ITokenService, JwtTokenService>();
 
             services.AddScoped<IAuthService, AuthService>();
+
+            services.Configure<KeycloakSettings>(configuration.GetSection(KeycloakSettings.SectionName));
+            services.AddHttpClient<IOAuthService, KeycloakOAuthService>();
+            services.AddScoped<ISessionService, SessionService>();
+            services.AddScoped<ITwoFactorAuthService, TotpTwoFactorAuthService>();
+
+            services.AddFundooKafkaProducer(configuration);
+            services.AddHostedService<OutboxProcessorBackgroundService>();
 
             return services;
         }

@@ -3,6 +3,9 @@
   <Folder Name="/src/ApiGateway/">
     <Project Path="src/ApiGateway/Fundoo.ApiGateway/Fundoo.ApiGateway.csproj" />
   </Folder>
+  <Folder Name="/src/Shared/">
+    <Project Path="src/Shared/Fundoo.Common/Fundoo.Common.csproj" />
+  </Folder>
   <Folder Name="/src/Services/" />
   <Folder Name="/src/Services/Notes/">
     <Project Path="src/Services/Notes/Fundoo.Notes.Api/Fundoo.Notes.Api.csproj" />
@@ -11,7 +14,7 @@
     <Project Path="src/Services/Notes/Fundoo.Notes.Infrastructure/Fundoo.Notes.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/src/Services/Notification/">
-      <Project Path="src/Services/Notification/Fundoo.Notification.Infrastructure/Fundoo.Notification.Infrastructure.csproj" />
+    <Project Path="src/Services/Notification/Fundoo.Notification.Infrastructure/Fundoo.Notification.Infrastructure.csproj" />
     <Project Path="src/Services/Notification/Fundoo.Notification.Api/Fundoo.Notification.Api.csproj" />
     <Project Path="src/Services/Notification/Fundoo.Notification.Application/Fundoo.Notification.Application.csproj" />
     <Project Path="src/Services/Notification/Fundoo.Notification.Domain/Fundoo.Notification.Domain.csproj" />
@@ -21,5 +24,12 @@
     <Project Path="src/Services/User/Fundoo.User.Application/Fundoo.User.Application.csproj" />
     <Project Path="src/Services/User/Fundoo.User.Domain/Fundoo.User.Domain.csproj" />
     <Project Path="src/Services/User/Fundoo.User.Infrastructure/Fundoo.User.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Tools/">
+    <Project Path="src/Tools/Fundoo.MigrationRunner/Fundoo.MigrationRunner.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Fundoo.User.Tests/Fundoo.User.Tests.csproj" />
+    <Project Path="tests/Fundoo.Notification.Tests/Fundoo.Notification.Tests.csproj" />
   </Folder>
 </Solution>

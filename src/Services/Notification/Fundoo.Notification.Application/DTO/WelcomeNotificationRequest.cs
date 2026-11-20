@@ -8,6 +8,8 @@ namespace Fundoo.Notification.Application.DTO
 {
     public sealed class WelcomeNotificationRequest
     {
+        public string? IdempotencyKey { get; set; }
+
         public string RecipientEmail { get; set; } = string.Empty;
 
         public string RecipientName { get; set; } = string.Empty;

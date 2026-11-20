@@ -118,7 +118,7 @@ namespace Fundoo.Notes.Api.Controllers
             {
                 UserId = userId,
                 Title = request.Title.Trim(),
-                Content = request.Content,
+                Content = request.Content ?? string.Empty,
                 Color = request.Color,
                 IsPinned = request.IsPinned,
                 IsArchived = false,
@@ -157,37 +157,27 @@ namespace Fundoo.Notes.Api.Controllers
                 Id = id,
                 UserId = userId,
                 Title = request.Title.Trim(),
-                Content = request.Content,
+                Content = request.Content ?? string.Empty,
                 Color = request.Color,
                 IsPinned = request.IsPinned
             };
 
-            try
+            var updated = await _notesService.UpdateAsync(
+                note, cancellationToken);
+
+            if (!updated)
             {
-                var updated = await _notesService.UpdateAsync(
-                    note, cancellationToken);
-
-                if (!updated)
+                return NotFound(new
                 {
-                    return NotFound(new
-                    {
-                        message = "Note not found or cannot be updated."
-                    });
-                }
-
-                return Ok(new
-                {
-                    isSuccess = true,
-                    message = "Note updated successfully."
+                    message = "Note not found or cannot be updated."
                 });
             }
-            catch (ArgumentException ex)
+
+            return Ok(new
             {
-                return BadRequest(new
-                {
-                    message = ex.Message
-                });
-            }
+                isSuccess = true,
+                message = "Note updated successfully."
+            });
         }
 
 

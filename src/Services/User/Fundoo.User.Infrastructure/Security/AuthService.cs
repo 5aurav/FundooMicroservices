@@ -1,9 +1,11 @@
-﻿using Fundoo.User.Application.Abstractions;
+﻿using Fundoo.Common.Messaging.Events;
+using Fundoo.User.Application.Abstractions;
 using Fundoo.User.Domain.Entity;
 using Microsoft.Extensions.Logging;
 using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 
 namespace Fundoo.User.Infrastructure.Security
 {
@@ -51,12 +53,33 @@ namespace Fundoo.User.Infrastructure.Security
                 Email = email.Trim(),
                 NormalizedEmail = normalizedEmail,
                 PasswordHash = _passwordHasher.Hash(password),
+                PasswordHashVersion = 2, // PBKDF2
                 IsActive = true,
                 CreatedAtUtc = DateTime.UtcNow,
                 UpdatedAtUtc = DateTime.UtcNow
             };
 
             await _userRepository.AddAsync(user, cancellationToken);
+
+            var userRegisteredEvent = new UserRegisteredEvent
+            {
+                UserId = user.Id,
+                Email = user.Email,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                OccurredAtUtc = DateTime.UtcNow
+            };
+
+            var outboxMessage = new OutboxMessage
+            {
+                Id = Guid.NewGuid(),
+                EventType = nameof(UserRegisteredEvent),
+                Payload = JsonSerializer.Serialize(userRegisteredEvent),
+                CorrelationId = user.Id.ToString(),
+                CreatedAtUtc = DateTime.UtcNow
+            };
+
+            await _userRepository.AddOutboxMessageAsync(outboxMessage, cancellationToken);
             await _userRepository.SaveChangesAsync(cancellationToken);
 
             var accessToken = _tokenService.CreateAccessToken(user);
@@ -89,6 +112,12 @@ namespace Fundoo.User.Infrastructure.Security
                     IsSuccess = false,
                     Message = "Invalid email or password."
                 };
+            }
+
+            // Lazy migration: rehash BCrypt passwords to PBKDF2 on successful login
+            if (NeedsPasswordRehash(user))
+            {
+                await RehashPasswordAsync(user.Id, password, cancellationToken);
             }
 
             var accessToken = _tokenService.CreateAccessToken(user);
@@ -141,6 +170,30 @@ namespace Fundoo.User.Infrastructure.Security
                 resetToken,
                 cancellationToken);
 
+            var resetEvent = new PasswordResetRequestedEvent
+            {
+                ResetTokenId = resetToken.Id,
+                UserId = user.Id,
+                RecipientEmail = user.Email,
+                RecipientName = user.FirstName,
+                ResetToken = rawToken,
+                ExpiresAtUtc = resetToken.ExpiresAtUtc,
+                OccurredAtUtc = now
+            };
+
+            var outboxMessage = new OutboxMessage
+            {
+                Id = Guid.NewGuid(),
+                EventType = nameof(PasswordResetRequestedEvent),
+                Payload = JsonSerializer.Serialize(resetEvent),
+                CorrelationId = resetToken.Id.ToString(),
+                CreatedAtUtc = now
+            };
+
+            await _userRepository.AddOutboxMessageAsync(
+                outboxMessage,
+                cancellationToken);
+
             await _userRepository.SaveChangesAsync(cancellationToken);
 
             try
@@ -162,11 +215,9 @@ namespace Fundoo.User.Infrastructure.Security
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    _logger.LogError(
-                        "Notification service returned {StatusCode} for password reset of user {UserId}",
+                    _logger.LogWarning(
+                        "Direct notification HTTP call returned {StatusCode} for user {UserId}. Event is queued in Transactional Outbox for Kafka delivery.",
                         (int)response.StatusCode, user.Id);
-
-                    return false;
                 }
 
                 return true;
@@ -177,10 +228,10 @@ namespace Fundoo.User.Infrastructure.Security
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                    "Failed to send password reset email for user {UserId}", user.Id);
+                _logger.LogWarning(ex,
+                    "Direct notification HTTP call failed for user {UserId}. Event is safely queued in Transactional Outbox for Kafka delivery.", user.Id);
 
-                return false;
+                return true;
             }
         }
 
@@ -233,6 +284,7 @@ namespace Fundoo.User.Infrastructure.Security
                     user.Id,
                     resetToken.Id,
                     newPasswordHash,
+                    2, // PBKDF2
                     now,
                     cancellationToken);
         }
@@ -259,6 +311,12 @@ namespace Fundoo.User.Infrastructure.Security
                     IsSuccess = false,
                     Message = "Invalid email or password."
                 };
+            }
+
+            // Lazy migration: rehash BCrypt passwords to PBKDF2 on successful login
+            if (NeedsPasswordRehash(user))
+            {
+                await RehashPasswordAsync(user.Id, password, cancellationToken);
             }
 
             var accessToken = _tokenService.CreateAccessToken(user);
@@ -448,6 +506,50 @@ namespace Fundoo.User.Infrastructure.Security
                 RefreshToken = newRawToken,
                 RefreshTokenExpiresAtUtc = expiry
             };
+        }
+
+        private bool NeedsPasswordRehash(AppUser user)
+        {
+            // Null or version 1 means BCrypt
+            if (!user.PasswordHashVersion.HasValue || user.PasswordHashVersion.Value == 1)
+            {
+                // Double-check the hash format
+                return user.PasswordHash.StartsWith("$2", StringComparison.Ordinal);
+            }
+
+            return false;
+        }
+
+        private async Task RehashPasswordAsync(
+            Guid userId,
+            string plainPassword,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                var newHash = _passwordHasher.Hash(plainPassword);
+                var rehashed = await _userRepository.RehashPasswordAsync(
+                    userId,
+                    newHash,
+                    2, // PBKDF2
+                    DateTime.UtcNow,
+                    cancellationToken);
+
+                if (rehashed)
+                {
+                    _logger.LogInformation(
+                        "Rehashed password for user {UserId} from BCrypt to PBKDF2",
+                        userId);
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log but don't block login if rehash fails
+                _logger.LogWarning(
+                    ex,
+                    "Failed to rehash password for user {UserId}",
+                    userId);
+            }
         }
 
     }

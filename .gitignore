@@ -1,40 +1,62 @@
+## ==============================================================================
+## Fundoo Microservices - Standard .NET / Docker / IDE .gitignore
+## ==============================================================================
 
-# Build files
-bin/
-obj/
+# --------------------------------------------------
+# Build and Output Files
+# --------------------------------------------------
 [Bb]in/
 [Oo]bj/
+[Ll]og/
+[Ll]ogs/
+*.log
+[Aa]rtifacts/
+[Pp]ublish/
+[Dd]ist/
+TestResults/
+[Tt]est[Rr]esults/
+*.nupkg
+*.snupkg
 
-# Visual Studio
+# --------------------------------------------------
+# Visual Studio / Visual Studio Code / Rider
+# --------------------------------------------------
 .vs/
-*.user
-*.suo
-
-# Rider
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
 .idea/
+*.user
+*.userosscache
+*.suo
+*.userprefs
+*.sln.docstates
+*.DotSettings.user
 
-# Environment and secrets
+# --------------------------------------------------
+# Environment Variables & Secrets
+# --------------------------------------------------
 .env
 .env.*
 !.env.example
-appsettings.Development.json
+appsettings*.local.json
 secrets.json
 
-# Logs
-*.log
-logs/
+# --------------------------------------------------
+# Docker / Compose Local Overrides
+# --------------------------------------------------
+docker-compose.override.yml
 
-# NuGet
-*.nupkg
-packages/
-
-# OS files
+# --------------------------------------------------
+# OS Specific Files
+# --------------------------------------------------
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
-
-# Test results
-TestResults/
-
-# Publish output
-publish/
-artifacts/
+Desktop.ini

@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace Fundoo.User.Api.Contracts
+﻿namespace Fundoo.User.Api.Contracts
 {
     public sealed class ResetPasswordRequest
     {
@@ -8,10 +6,6 @@ namespace Fundoo.User.Api.Contracts
 
         public string Token { get; set; } = string.Empty;
 
-        [StringLength(PasswordRules.MaxLength, MinimumLength = PasswordRules.MinLength,
-            ErrorMessage = PasswordRules.LengthMessage)]
-        [RegularExpression(PasswordRules.ComplexityPattern,
-            ErrorMessage = PasswordRules.ComplexityMessage)]
         public string NewPassword { get; set; } = string.Empty;
     }
 }

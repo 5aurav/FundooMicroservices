@@ -187,7 +187,7 @@ namespace Fundoo.Notes.Application.Repositories
             command.Parameters.AddWithValue("id", note.Id);
             command.Parameters.AddWithValue("userId", note.UserId);
             command.Parameters.AddWithValue("title", note.Title);
-            command.Parameters.AddWithValue("content", note.Content);
+            command.Parameters.AddWithValue("content", note.Content ?? string.Empty);
 
             command.Parameters.AddWithValue("color", (object?)note.Color ?? DBNull.Value);
 
@@ -230,7 +230,7 @@ namespace Fundoo.Notes.Application.Repositories
             command.Parameters.AddWithValue("id", note.Id);
             command.Parameters.AddWithValue("userId", note.UserId);
             command.Parameters.AddWithValue("title", note.Title);
-            command.Parameters.AddWithValue("content", note.Content);
+            command.Parameters.AddWithValue("content", note.Content ?? string.Empty);
 
             command.Parameters.AddWithValue("color", (object?)note.Color ?? DBNull.Value);
 

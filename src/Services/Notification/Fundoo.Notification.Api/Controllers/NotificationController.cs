@@ -19,18 +19,6 @@ namespace Fundoo.Notification.Api.Controllers
     CancellationToken cancellationToken)
         {
 
-            //await Task.Delay(TimeSpan.FromSeconds(10), cancellationToken);
-            if (string.IsNullOrWhiteSpace(request.IdempotencyKey) ||
-                string.IsNullOrWhiteSpace(request.RecipientEmail) ||
-                string.IsNullOrWhiteSpace(request.ResetToken))
-            {
-                return BadRequest(new
-                {
-                    isSuccess = false,
-                    message = "Idempotency key, recipient email and reset token are required."
-                });
-            }
-
             await _notificationService.SendPasswordResetNotificationAsync(
                 request,
                 cancellationToken);
@@ -48,16 +36,6 @@ namespace Fundoo.Notification.Api.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> SendWelcome([FromBody] WelcomeNotificationRequest request,CancellationToken cancellationToken)
         {
-            if (string.IsNullOrWhiteSpace(request.RecipientEmail) ||
-                string.IsNullOrWhiteSpace(request.RecipientName))
-            {
-                return BadRequest(new
-                {
-                    isSuccess = false,
-                    message = "Recipient email and name are required."
-                });
-            }
-
             await _notificationService.SendWelcomeNotificationAsync(request,cancellationToken);
 
             return Accepted(new

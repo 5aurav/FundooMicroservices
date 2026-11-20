@@ -1,0 +1,149 @@
+{
+  "Routes": [
+    {
+      "UpstreamPathTemplate": "/api/v1/auth/{everything}",
+      "UpstreamHttpMethod": [
+        "GET",
+        "POST",
+        "PUT",
+        "DELETE",
+        "PATCH"
+      ],
+      "DownstreamPathTemplate": "/api/v1/auth/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "user-service",
+          "Port": 80
+        }
+      ],
+      "AddHeadersToRequest": {
+        "X-Internal-Service-Key": "FundooInternalMicroservicesSecretToken_2026_Secure!"
+      },
+      "RateLimitOptions": {
+        "ClientWhitelist": [
+          "trusted-client-internal",
+          "admin-service",
+          "internal-portal"
+        ],
+        "EnableRateLimiting": true,
+        "Period": "1m",
+        "PeriodTimespan": 60,
+        "Limit": 50
+      }
+    },
+    {
+      "UpstreamPathTemplate": "/api/v2/auth/{everything}",
+      "UpstreamHttpMethod": [
+        "GET",
+        "POST",
+        "PUT",
+        "DELETE",
+        "PATCH"
+      ],
+      "DownstreamPathTemplate": "/api/v2/auth/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "user-service",
+          "Port": 80
+        }
+      ],
+      "AddHeadersToRequest": {
+        "X-Internal-Service-Key": "FundooInternalMicroservicesSecretToken_2026_Secure!"
+      },
+      "RateLimitOptions": {
+        "ClientWhitelist": [
+          "trusted-client-internal",
+          "admin-service",
+          "internal-portal"
+        ],
+        "EnableRateLimiting": true,
+        "Period": "1m",
+        "PeriodTimespan": 60,
+        "Limit": 50
+      }
+    },
+    {
+      "UpstreamPathTemplate": "/api/notes/{everything}",
+      "UpstreamHttpMethod": [
+        "GET",
+        "POST",
+        "PUT",
+        "DELETE",
+        "PATCH"
+      ],
+      "DownstreamPathTemplate": "/api/notes/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "notes-service",
+          "Port": 80
+        }
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "FundooGatewayKey",
+        "AllowedScopes": []
+      },
+      "AddHeadersToRequest": {
+        "X-Internal-Service-Key": "FundooInternalMicroservicesSecretToken_2026_Secure!"
+      },
+      "RateLimitOptions": {
+        "ClientWhitelist": [
+          "trusted-client-internal",
+          "admin-service",
+          "internal-portal"
+        ],
+        "EnableRateLimiting": true,
+        "Period": "1m",
+        "PeriodTimespan": 60,
+        "Limit": 50
+      }
+    },
+    {
+      "UpstreamPathTemplate": "/api/notifications/{everything}",
+      "UpstreamHttpMethod": [
+        "GET",
+        "POST",
+        "PUT",
+        "DELETE",
+        "PATCH"
+      ],
+      "DownstreamPathTemplate": "/api/notifications/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "notification-service",
+          "Port": 80
+        }
+      ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "FundooGatewayKey",
+        "AllowedScopes": []
+      },
+      "AddHeadersToRequest": {
+        "X-Internal-Service-Key": "FundooInternalMicroservicesSecretToken_2026_Secure!"
+      },
+      "RateLimitOptions": {
+        "ClientWhitelist": [
+          "trusted-client-internal",
+          "admin-service",
+          "internal-portal"
+        ],
+        "EnableRateLimiting": true,
+        "Period": "1m",
+        "PeriodTimespan": 60,
+        "Limit": 30
+      }
+    }
+  ],
+  "GlobalConfiguration": {
+    "BaseUrl": "http://localhost:30080",
+    "RateLimitOptions": {
+      "ClientIdHeader": "X-Client-Id",
+      "DisableRateLimitHeaders": false,
+      "HttpStatusCode": 429,
+      "QuotaExceededMessage": "Rate limit exceeded. Please try again later."
+    }
+  }
+}

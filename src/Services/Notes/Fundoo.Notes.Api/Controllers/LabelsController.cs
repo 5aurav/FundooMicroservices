@@ -25,24 +25,17 @@ namespace Fundoo.Notes.Api.Controllers
             if (!TryGetUserId(out var userId))
                 return Unauthorized(new { message = "Invalid user ID in token." });
 
-            try
-            {
-                var label = await _labelsService.CreateAsync(
-                    userId, request.Name, cancellationToken);
+            var label = await _labelsService.CreateAsync(
+                userId, request.Name, cancellationToken);
 
-                return CreatedAtAction(
-                    nameof(GetLabels),
-                    new
-                    {
-                        isSuccess = true,
-                        message = "Label created successfully.",
-                        data = label
-                    });
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            return CreatedAtAction(
+                nameof(GetLabels),
+                new
+                {
+                    isSuccess = true,
+                    message = "Label created successfully.",
+                    data = label
+                });
         }
 
 
@@ -73,24 +66,17 @@ namespace Fundoo.Notes.Api.Controllers
             if (!TryGetUserId(out var userId))
                 return Unauthorized(new { message = "Invalid user ID in token." });
 
-            try
-            {
-                var updated = await _labelsService.UpdateAsync(
-                    id, userId, request.Name, cancellationToken);
+            var updated = await _labelsService.UpdateAsync(
+                id, userId, request.Name, cancellationToken);
 
-                if (!updated)
-                    return NotFound(new { message = "Label not found." });
+            if (!updated)
+                return NotFound(new { message = "Label not found." });
 
-                return Ok(new
-                {
-                    isSuccess = true,
-                    message = "Label updated successfully."
-                });
-            }
-            catch (ArgumentException ex)
+            return Ok(new
             {
-                return BadRequest(new { message = ex.Message });
-            }
+                isSuccess = true,
+                message = "Label updated successfully."
+            });
         }
 
 

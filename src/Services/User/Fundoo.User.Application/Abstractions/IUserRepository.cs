@@ -26,6 +26,7 @@ namespace Fundoo.User.Application.Abstractions
             Guid userId,
             Guid resetTokenId,
             string passwordHash,
+            int passwordHashVersion,
             DateTime nowUtc,
             CancellationToken cancellationToken = default);
 
@@ -51,5 +52,19 @@ namespace Fundoo.User.Application.Abstractions
             RefreshToken newToken,
             CancellationToken cancellationToken = default);
 
+        /// <summary>
+        /// Updates the user's password hash and version atomically. Used during
+        /// lazy BCrypt→PBKDF2 migration on successful login.
+        /// </summary>
+        Task<bool> RehashPasswordAsync(
+            Guid userId,
+            string newPasswordHash,
+            int newHashVersion,
+            DateTime nowUtc,
+            CancellationToken cancellationToken = default);
+
+        Task AddOutboxMessageAsync(
+            OutboxMessage message,
+            CancellationToken cancellationToken = default);
     }
 }

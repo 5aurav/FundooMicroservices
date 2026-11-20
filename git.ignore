@@ -1,0 +1,62 @@
+## ==============================================================================
+## Fundoo Microservices - Standard .NET / Docker / IDE .gitignore
+## ==============================================================================
+
+# --------------------------------------------------
+# Build and Output Files
+# --------------------------------------------------
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+*.log
+[Aa]rtifacts/
+[Pp]ublish/
+[Dd]ist/
+TestResults/
+[Tt]est[Rr]esults/
+*.nupkg
+*.snupkg
+
+# --------------------------------------------------
+# Visual Studio / Visual Studio Code / Rider
+# --------------------------------------------------
+.vs/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.user
+*.userosscache
+*.suo
+*.userprefs
+*.sln.docstates
+*.DotSettings.user
+
+# --------------------------------------------------
+# Environment Variables & Secrets
+# --------------------------------------------------
+.env
+.env.*
+!.env.example
+appsettings*.local.json
+secrets.json
+
+# --------------------------------------------------
+# Docker / Compose Local Overrides
+# --------------------------------------------------
+docker-compose.override.yml
+
+# --------------------------------------------------
+# OS Specific Files
+# --------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini

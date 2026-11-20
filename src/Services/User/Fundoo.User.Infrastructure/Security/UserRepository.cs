@@ -86,6 +86,7 @@ namespace Fundoo.User.Infrastructure.Security
             Guid userId,
             Guid resetTokenId,
             string passwordHash,
+            int passwordHashVersion,
             DateTime nowUtc,
             CancellationToken cancellationToken = default)
         {
@@ -117,6 +118,7 @@ namespace Fundoo.User.Infrastructure.Security
                 .ExecuteUpdateAsync(
                     setters => setters
                         .SetProperty(user => user.PasswordHash, passwordHash)
+                        .SetProperty(user => user.PasswordHashVersion, passwordHashVersion)
                         .SetProperty(user => user.UpdatedAtUtc, nowUtc),
                     cancellationToken);
 
@@ -221,5 +223,30 @@ namespace Fundoo.User.Infrastructure.Security
                     cancellationToken);
         }
 
+        public async Task<bool> RehashPasswordAsync(
+            Guid userId,
+            string newPasswordHash,
+            int newHashVersion,
+            DateTime nowUtc,
+            CancellationToken cancellationToken = default)
+        {
+            var updated = await _context.Users
+                .Where(user => user.Id == userId && user.IsActive)
+                .ExecuteUpdateAsync(
+                    setters => setters
+                        .SetProperty(user => user.PasswordHash, newPasswordHash)
+                        .SetProperty(user => user.PasswordHashVersion, newHashVersion)
+                        .SetProperty(user => user.UpdatedAtUtc, nowUtc),
+                    cancellationToken);
+
+            return updated == 1;
+        }
+
+        public async Task AddOutboxMessageAsync(
+            OutboxMessage message,
+            CancellationToken cancellationToken = default)
+        {
+            await _context.OutboxMessages.AddAsync(message, cancellationToken);
+        }
     }
 }

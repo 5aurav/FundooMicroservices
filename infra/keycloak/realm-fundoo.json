@@ -1,0 +1,26 @@
+{
+  "realm": "fundoo",
+  "enabled": true,
+  "displayName": "Fundoo Local Development",
+  "registrationAllowed": false,
+  "resetPasswordAllowed": true,
+  "roles": {
+    "realm": [
+      { "name": "user", "description": "Fundoo application user" },
+      { "name": "admin", "description": "Fundoo administrator" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "fundoo-web",
+      "name": "Fundoo Web Client",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "implicitFlowEnabled": false,
+      "redirectUris": ["http://localhost:*/*", "https://localhost:*/*"],
+      "webOrigins": ["http://localhost:*", "https://localhost:*"]
+    }
+  ]
+}
