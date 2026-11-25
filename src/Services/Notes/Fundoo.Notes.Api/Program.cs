@@ -28,6 +28,15 @@ try
         $"NotesDb connection string loaded: {!string.IsNullOrWhiteSpace(notesConnectionString)}");
 
     // Add services to the container.
+    builder.Services.AddCors(options =>
+    {
+        options.AddDefaultPolicy(policy =>
+        {
+            policy.AllowAnyOrigin()
+                  .AllowAnyMethod()
+                  .AllowAnyHeader();
+        });
+    });
 
     builder.Services.AddControllers();
 
@@ -111,15 +120,63 @@ try
     var app = builder.Build();
 
     // Configure the HTTP request pipeline.
-    if (app.Environment.IsDevelopment())
+    app.UseCors();
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
     {
-        app.UseSwagger();
-        app.UseSwaggerUI();
-    }
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Fundoo Notes API V1");
+    });
 
     logger.Info("Fundoo Notes API is starting.");
 
-    app.UseHttpsRedirection();
+    // Ensure Notes and Labels tables exist
+    try
+    {
+        var factory = app.Services.GetRequiredService<Fundoo.Notes.Infrastructure.Data.NotesDbConnectionFactory>();
+        await using var conn = factory.CreateConnection();
+        await conn.OpenAsync();
+        const string ddl = @"
+CREATE TABLE IF NOT EXISTS notes (
+    id uuid PRIMARY KEY,
+    user_id uuid NOT NULL,
+    title varchar(200) NOT NULL,
+    content text NOT NULL DEFAULT '',
+    color varchar(50) NULL,
+    is_pinned boolean NOT NULL DEFAULT FALSE,
+    is_archived boolean NOT NULL DEFAULT FALSE,
+    is_trashed boolean NOT NULL DEFAULT FALSE,
+    created_at_utc timestamptz NOT NULL,
+    updated_at_utc timestamptz NOT NULL
+);
+CREATE INDEX IF NOT EXISTS ix_notes_user_active ON notes (user_id, is_pinned DESC, created_at_utc DESC) WHERE is_archived = FALSE AND is_trashed = FALSE;
+CREATE INDEX IF NOT EXISTS ix_notes_user_archived ON notes (user_id, updated_at_utc DESC) WHERE is_archived = TRUE AND is_trashed = FALSE;
+CREATE INDEX IF NOT EXISTS ix_notes_user_trashed ON notes (user_id, updated_at_utc DESC) WHERE is_trashed = TRUE;
+CREATE TABLE IF NOT EXISTS labels (
+    id uuid PRIMARY KEY,
+    user_id uuid NOT NULL,
+    name varchar(100) NOT NULL
+);
+CREATE INDEX IF NOT EXISTS ix_labels_user_name ON labels (user_id, name);
+CREATE TABLE IF NOT EXISTS note_labels (
+    note_id uuid NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
+    label_id uuid NOT NULL REFERENCES labels(id) ON DELETE CASCADE,
+    PRIMARY KEY (note_id, label_id)
+);
+CREATE INDEX IF NOT EXISTS ix_note_labels_label_id ON note_labels (label_id);
+";
+        await using var cmd = new Npgsql.NpgsqlCommand(ddl, conn);
+        await cmd.ExecuteNonQueryAsync();
+        logger.Info("Notes and Labels tables verified successfully.");
+    }
+    catch (Exception ex)
+    {
+        logger.Error(ex, "Failed to verify Notes tables on startup.");
+    }
+
+    if (!app.Environment.IsProduction())
+    {
+        app.UseHttpsRedirection();
+    }
 
     app.UseFundooCorrelation();
     app.UseExceptionHandler();

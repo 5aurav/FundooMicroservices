@@ -27,6 +27,9 @@ namespace Fundoo.User.Infrastructure.Security
 
             services.Configure<KeycloakSettings>(configuration.GetSection(KeycloakSettings.SectionName));
             services.AddHttpClient<IOAuthService, KeycloakOAuthService>();
+
+            services.Configure<GoogleOAuthSettings>(configuration.GetSection(GoogleOAuthSettings.SectionName));
+            services.AddHttpClient<IGoogleOAuthService, GoogleOAuthService>();
             services.AddScoped<ISessionService, SessionService>();
             services.AddScoped<ITwoFactorAuthService, TotpTwoFactorAuthService>();
 

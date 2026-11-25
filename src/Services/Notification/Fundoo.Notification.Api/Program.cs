@@ -23,6 +23,16 @@ try
     builder.Host.UseNLog();
 
     // Register controllers
+    builder.Services.AddCors(options =>
+    {
+        options.AddDefaultPolicy(policy =>
+        {
+            policy.AllowAnyOrigin()
+                  .AllowAnyMethod()
+                  .AllowAnyHeader();
+        });
+    });
+
     builder.Services.AddControllers();
 
     // Register Swagger/OpenAPI
@@ -87,15 +97,19 @@ try
     }
 
     // Configure Swagger
-    if (app.Environment.IsDevelopment())
+    app.UseCors();
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
     {
-        app.UseSwagger();
-        app.UseSwaggerUI();
-    }
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Fundoo Notification API V1");
+    });
 
     logger.Info("Fundoo Notification API is starting.");
 
-    app.UseHttpsRedirection();
+    if (!app.Environment.IsProduction())
+    {
+        app.UseHttpsRedirection();
+    }
 
     app.UseFundooCorrelation();
     app.UseExceptionHandler();

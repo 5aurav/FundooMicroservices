@@ -19,7 +19,7 @@ spec:
         - name: POSTGRES_USER
           value: "postgres"
         - name: POSTGRES_PASSWORD
-          value: "FundooNotes@2026"
+          value: "Saurav@2005"
         - name: POSTGRES_DB
           value: "fundoo_db"
         ports:

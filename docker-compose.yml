@@ -159,11 +159,18 @@ services:
       context: .
       dockerfile: src/Services/User/Fundoo.User.Api/Dockerfile
     container_name: fundoo-user-api-1
+    networks:
+      default:
+        aliases:
+          - user-service
     environment:
       ConnectionStrings__UserDb: Host=user-db;Port=5432;Database=fundoo_user;Username=postgres;Password=postgrespassword
       Kafka__BootstrapServers: kafka:29092
       Redis__Configuration: redis:6379
       Keycloak__Authority: http://keycloak:8080/realms/fundoo
+      Google__ClientId: ${GOOGLE_CLIENT_ID:-}
+      Google__ClientSecret: ${GOOGLE_CLIENT_SECRET:-}
+      Google__RedirectUri: ${GOOGLE_REDIRECT_URI:-http://localhost:7000/api/v1/auth/google/callback}
       Jwt__SigningKey: FundooSuperSecretKeyForJwtAuthenticationAndOcelotValidation2026!
       Jwt__Issuer: fundoo-user-api
       Jwt__Audience: fundoo-clients
@@ -187,6 +194,9 @@ services:
       Kafka__BootstrapServers: kafka:29092
       Redis__Configuration: redis:6379
       Keycloak__Authority: http://keycloak:8080/realms/fundoo
+      Google__ClientId: ${GOOGLE_CLIENT_ID:-}
+      Google__ClientSecret: ${GOOGLE_CLIENT_SECRET:-}
+      Google__RedirectUri: ${GOOGLE_REDIRECT_URI:-http://localhost:7000/api/v1/auth/google/callback}
       Jwt__SigningKey: FundooSuperSecretKeyForJwtAuthenticationAndOcelotValidation2026!
       Jwt__Issuer: fundoo-user-api
       Jwt__Audience: fundoo-clients
@@ -205,6 +215,10 @@ services:
       context: .
       dockerfile: src/Services/Notes/Fundoo.Notes.Api/Dockerfile
     container_name: fundoo-notes-api-1
+    networks:
+      default:
+        aliases:
+          - notes-service
     environment:
       ConnectionStrings__NotesDb: Host=notes-db;Port=5432;Database=fundoo_notes;Username=postgres;Password=postgrespassword
       Redis__Configuration: redis:6379
@@ -245,6 +259,10 @@ services:
       context: .
       dockerfile: src/Services/Notification/Fundoo.Notification.Api/Dockerfile
     container_name: fundoo-notification-api
+    networks:
+      default:
+        aliases:
+          - notification-service
     environment:
       ConnectionStrings__NotificationDb: Host=notification-db;Port=5432;Database=fundoo_notification;Username=postgres;Password=postgrespassword
       Kafka__BootstrapServers: kafka:29092

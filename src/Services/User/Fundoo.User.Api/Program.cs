@@ -30,6 +30,16 @@ try
     builder.Services.AddFundooExceptionHandling();
     builder.Services.AddFundooFluentValidation(typeof(RegisterRequest).Assembly);
 
+    builder.Services.AddCors(options =>
+    {
+        options.AddDefaultPolicy(policy =>
+        {
+            policy.AllowAnyOrigin()
+                  .AllowAnyMethod()
+                  .AllowAnyHeader();
+        });
+    });
+
     builder.Services.AddControllers();
     // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
     builder.Services.AddEndpointsApiExplorer();
@@ -159,23 +169,24 @@ try
     }
 
     // Configure the HTTP request pipeline.
-    if (app.Environment.IsDevelopment())
+    app.UseCors();
+    app.UseSwagger();
+
+    app.UseSwaggerUI(options =>
     {
-        app.UseSwagger();
+        options.SwaggerEndpoint(
+            "/swagger/v1/swagger.json",
+            "Fundoo User API V1");
 
-        app.UseSwaggerUI(options =>
-        {
-            options.SwaggerEndpoint(
-                "/swagger/v1/swagger.json",
-                "Fundoo User API V1");
+        options.SwaggerEndpoint(
+            "/swagger/v2/swagger.json",
+            "Fundoo User API V2");
+    });
 
-            options.SwaggerEndpoint(
-                "/swagger/v2/swagger.json",
-                "Fundoo User API V2");
-        });
+    if (!app.Environment.IsProduction())
+    {
+        app.UseHttpsRedirection();
     }
-
-    app.UseHttpsRedirection();
 
     app.UseFundooCorrelation();
     app.UseExceptionHandler();

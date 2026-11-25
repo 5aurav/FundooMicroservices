@@ -1,6 +1,54 @@
 {
   "Routes": [
     {
+      "UpstreamPathTemplate": "/swagger/user-v1/swagger.json",
+      "UpstreamHttpMethod": [ "GET" ],
+      "DownstreamPathTemplate": "/swagger/v1/swagger.json",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 7001
+        }
+      ]
+    },
+    {
+      "UpstreamPathTemplate": "/swagger/user-v2/swagger.json",
+      "UpstreamHttpMethod": [ "GET" ],
+      "DownstreamPathTemplate": "/swagger/v2/swagger.json",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 7001
+        }
+      ]
+    },
+    {
+      "UpstreamPathTemplate": "/swagger/notes/swagger.json",
+      "UpstreamHttpMethod": [ "GET" ],
+      "DownstreamPathTemplate": "/swagger/v1/swagger.json",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 7002
+        }
+      ]
+    },
+    {
+      "UpstreamPathTemplate": "/swagger/notification/swagger.json",
+      "UpstreamHttpMethod": [ "GET" ],
+      "DownstreamPathTemplate": "/swagger/v1/swagger.json",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 7003
+        }
+      ]
+    },
+    {
       "UpstreamPathTemplate": "/api/v1/auth/{everything}",
       "UpstreamHttpMethod": [
         "GET",
@@ -79,6 +127,46 @@
       }
     },
     {
+      "UpstreamPathTemplate": "/api/notes",
+      "UpstreamHttpMethod": [
+        "GET",
+        "POST"
+      ],
+      "DownstreamPathTemplate": "/api/notes",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 7002
+        },
+        {
+          "Host": "localhost",
+          "Port": 7012
+        }
+      ],
+      "LoadBalancerOptions": {
+        "Type": "RoundRobin"
+      },
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "FundooGatewayKey",
+        "AllowedScopes": []
+      },
+      "AddHeadersToRequest": {
+        "X-Internal-Service-Key": "FundooInternalMicroservicesSecretToken_2026_Secure!"
+      },
+      "RateLimitOptions": {
+        "ClientWhitelist": [
+          "trusted-client-internal",
+          "admin-service",
+          "internal-portal"
+        ],
+        "EnableRateLimiting": true,
+        "Period": "1m",
+        "PeriodTimespan": 60,
+        "Limit": 50
+      }
+    },
+    {
       "UpstreamPathTemplate": "/api/notes/{everything}",
       "UpstreamHttpMethod": [
         "GET",
@@ -88,6 +176,89 @@
         "PATCH"
       ],
       "DownstreamPathTemplate": "/api/notes/{everything}",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 7002
+        },
+        {
+          "Host": "localhost",
+          "Port": 7012
+        }
+      ],
+      "LoadBalancerOptions": {
+        "Type": "RoundRobin"
+      },
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "FundooGatewayKey",
+        "AllowedScopes": []
+      },
+      "AddHeadersToRequest": {
+        "X-Internal-Service-Key": "FundooInternalMicroservicesSecretToken_2026_Secure!"
+      },
+      "RateLimitOptions": {
+        "ClientWhitelist": [
+          "trusted-client-internal",
+          "admin-service",
+          "internal-portal"
+        ],
+        "EnableRateLimiting": true,
+        "Period": "1m",
+        "PeriodTimespan": 60,
+        "Limit": 50
+      }
+    },
+    {
+      "UpstreamPathTemplate": "/api/labels",
+      "UpstreamHttpMethod": [
+        "GET",
+        "POST"
+      ],
+      "DownstreamPathTemplate": "/api/labels",
+      "DownstreamScheme": "https",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 7002
+        },
+        {
+          "Host": "localhost",
+          "Port": 7012
+        }
+      ],
+      "LoadBalancerOptions": {
+        "Type": "RoundRobin"
+      },
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "FundooGatewayKey",
+        "AllowedScopes": []
+      },
+      "AddHeadersToRequest": {
+        "X-Internal-Service-Key": "FundooInternalMicroservicesSecretToken_2026_Secure!"
+      },
+      "RateLimitOptions": {
+        "ClientWhitelist": [
+          "trusted-client-internal",
+          "admin-service",
+          "internal-portal"
+        ],
+        "EnableRateLimiting": true,
+        "Period": "1m",
+        "PeriodTimespan": 60,
+        "Limit": 50
+      }
+    },
+    {
+      "UpstreamPathTemplate": "/api/labels/{everything}",
+      "UpstreamHttpMethod": [
+        "GET",
+        "POST",
+        "PUT",
+        "DELETE",
+        "PATCH"
+      ],
+      "DownstreamPathTemplate": "/api/labels/{everything}",
       "DownstreamScheme": "https",
       "DownstreamHostAndPorts": [
         {
@@ -144,10 +315,6 @@
       ],
       "LoadBalancerOptions": {
         "Type": "RoundRobin"
-      },
-      "AuthenticationOptions": {
-        "AuthenticationProviderKey": "FundooGatewayKey",
-        "AllowedScopes": []
       },
       "AddHeadersToRequest": {
         "X-Internal-Service-Key": "FundooInternalMicroservicesSecretToken_2026_Secure!"

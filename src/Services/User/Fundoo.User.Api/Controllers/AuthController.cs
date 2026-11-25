@@ -14,6 +14,7 @@ namespace Fundoo.User.Api.Controllers
     {
         private readonly IAuthService _authService;
         private readonly IOAuthService _oauthService;
+        private readonly IGoogleOAuthService _googleOAuthService;
         private readonly ISessionService _sessionService;
         private readonly ITwoFactorAuthService _twoFactorService;
         private readonly IUserRepository _userRepository;
@@ -22,6 +23,7 @@ namespace Fundoo.User.Api.Controllers
         public AuthController(
             IAuthService authService,
             IOAuthService oauthService,
+            IGoogleOAuthService googleOAuthService,
             ISessionService sessionService,
             ITwoFactorAuthService twoFactorService,
             IUserRepository userRepository,
@@ -29,6 +31,7 @@ namespace Fundoo.User.Api.Controllers
         {
             _authService = authService;
             _oauthService = oauthService;
+            _googleOAuthService = googleOAuthService;
             _sessionService = sessionService;
             _twoFactorService = twoFactorService;
             _userRepository = userRepository;
@@ -222,6 +225,143 @@ namespace Fundoo.User.Api.Controllers
             }
 
             return Ok(new { isSuccess = true, message = "Account successfully linked to external provider." });
+        }
+
+        // ==========================================
+        // Google OAuth 2.0 Integration
+        // ==========================================
+
+        [HttpGet("google/url")]
+        public IActionResult GetGoogleAuthorizationUrl([FromQuery] string? redirectUri, [FromQuery] string? state)
+        {
+            var targetState = state ?? Guid.NewGuid().ToString("N");
+            var url = _googleOAuthService.GetAuthorizationUrl(targetState, redirectUri);
+            return Ok(new
+            {
+                isSuccess = true,
+                authorizationUrl = url,
+                state = targetState
+            });
+        }
+
+        [HttpGet("google/callback")]
+        public async Task<IActionResult> GoogleCallbackGet(
+            [FromQuery] string? code,
+            [FromQuery] string? state,
+            [FromQuery] string? error,
+            [FromQuery] string? redirectUri,
+            CancellationToken cancellationToken)
+        {
+            if (!string.IsNullOrEmpty(error))
+            {
+                return BadRequest(new { isSuccess = false, message = $"Google OAuth error: {error}" });
+            }
+
+            if (string.IsNullOrEmpty(code))
+            {
+                return BadRequest(new { isSuccess = false, message = "Missing authorization code from Google." });
+            }
+
+            var result = await _googleOAuthService.HandleCallbackAsync(code, redirectUri, cancellationToken);
+            if (!result.IsSuccess)
+            {
+                return BadRequest(new { isSuccess = false, message = result.Message });
+            }
+
+            // Record session
+            var (session, _) = await _sessionService.CreateSessionAsync(
+                result.UserId!.Value,
+                HttpContext.Connection.RemoteIpAddress?.ToString(),
+                Request.Headers.UserAgent.ToString(),
+                TimeSpan.FromDays(7),
+                cancellationToken);
+
+            return Ok(new
+            {
+                isSuccess = true,
+                userId = result.UserId,
+                accessToken = result.AccessToken,
+                sessionId = session.Id,
+                tokenType = "Bearer",
+                message = result.Message,
+                state
+            });
+        }
+
+        [HttpPost("google/callback")]
+        public async Task<IActionResult> GoogleCallbackPost(
+            [FromBody] OAuthCallbackRequest request,
+            CancellationToken cancellationToken)
+        {
+            var result = await _googleOAuthService.HandleCallbackAsync(request.Code, request.RedirectUri, cancellationToken);
+            if (!result.IsSuccess)
+            {
+                return BadRequest(new { isSuccess = false, message = result.Message });
+            }
+
+            var (session, _) = await _sessionService.CreateSessionAsync(
+                result.UserId!.Value,
+                HttpContext.Connection.RemoteIpAddress?.ToString(),
+                Request.Headers.UserAgent.ToString(),
+                TimeSpan.FromDays(7),
+                cancellationToken);
+
+            return Ok(new
+            {
+                isSuccess = true,
+                userId = result.UserId,
+                accessToken = result.AccessToken,
+                sessionId = session.Id,
+                tokenType = "Bearer",
+                message = result.Message
+            });
+        }
+
+        [HttpPost("google/signin")]
+        public async Task<IActionResult> GoogleSignInWithIdToken(
+            [FromBody] GoogleSignInRequest request,
+            CancellationToken cancellationToken)
+        {
+            var result = await _googleOAuthService.ValidateIdTokenAsync(request.IdToken, cancellationToken);
+            if (!result.IsSuccess)
+            {
+                return BadRequest(new { isSuccess = false, message = result.Message });
+            }
+
+            var (session, _) = await _sessionService.CreateSessionAsync(
+                result.UserId!.Value,
+                HttpContext.Connection.RemoteIpAddress?.ToString(),
+                Request.Headers.UserAgent.ToString(),
+                TimeSpan.FromDays(7),
+                cancellationToken);
+
+            return Ok(new
+            {
+                isSuccess = true,
+                userId = result.UserId,
+                accessToken = result.AccessToken,
+                sessionId = session.Id,
+                tokenType = "Bearer",
+                message = result.Message
+            });
+        }
+
+        [Authorize]
+        [HttpPost("google/link")]
+        public async Task<IActionResult> LinkGoogleAccount(
+            [FromBody] OAuthCallbackRequest request,
+            CancellationToken cancellationToken)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null) return Unauthorized();
+
+            var linked = await _googleOAuthService.LinkAccountAsync(userId.Value, request.Code, request.RedirectUri, cancellationToken);
+            if (!linked)
+            {
+                return BadRequest(new { isSuccess = false, message = "Failed to link Google account or already linked to another account." });
+            }
+
+            return Ok(new { isSuccess = true, message = "Google account successfully linked." });
         }
 
         // ==========================================
