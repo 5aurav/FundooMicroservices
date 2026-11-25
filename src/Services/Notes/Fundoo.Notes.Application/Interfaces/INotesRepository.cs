@@ -6,6 +6,8 @@ namespace Fundoo.Notes.Application.Interfaces
     {
         Task<Note?> GetByIdAsync(Guid noteId, Guid userId, CancellationToken cancellationToken = default);
 
+        Task<Note?> GetByIdDirectAsync(Guid noteId, CancellationToken cancellationToken = default);
+
         Task<IReadOnlyList<Note>> GetAllAsync(Guid userId, CancellationToken cancellationToken = default);
 
         Task<IReadOnlyList<Note>> GetActiveAsync(Guid userId, CancellationToken cancellationToken = default);

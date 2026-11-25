@@ -19,6 +19,7 @@ namespace Fundoo.Notes.Domain.Entity
         public DateTime CreatedAtUtc { get; set; }
         public DateTime UpdatedAtUtc { get; set; }
         public List<NoteLabel> NoteLabels { get; set; } = new();
+        public List<NoteCollaborator> Collaborators { get; set; } = new();
 
     }
 }

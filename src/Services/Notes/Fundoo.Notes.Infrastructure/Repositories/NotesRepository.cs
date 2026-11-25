@@ -55,6 +55,36 @@ namespace Fundoo.Notes.Application.Repositories
             return note;
         }
 
+        public async Task<Note?> GetByIdDirectAsync(
+            Guid noteId,
+            CancellationToken cancellationToken = default)
+        {
+            const string query = """
+        SELECT id, user_id, title, content, color,
+               is_pinned, is_archived, is_trashed,
+               created_at_utc, updated_at_utc
+        FROM notes
+        WHERE id = @noteId;
+        """;
+
+            await using var connection = _connectionFactory.CreateConnection();
+            await connection.OpenAsync(cancellationToken);
+
+            await using var command = new NpgsqlCommand(query, connection);
+            command.Parameters.AddWithValue("noteId", noteId);
+
+            Note? note;
+            await using (var reader = await command.ExecuteReaderAsync(cancellationToken))
+            {
+                if (!await reader.ReadAsync(cancellationToken))
+                    return null;
+
+                note = MapNote(reader);
+            }
+
+            return note;
+        }
+
         // Get all notes belonging to the user.
         public async Task<IReadOnlyList<Note>> GetAllAsync(Guid userId,
             CancellationToken cancellationToken = default)
@@ -215,8 +245,7 @@ namespace Fundoo.Notes.Application.Repositories
                     is_archived = @isArchived,
                     is_trashed = @isTrashed,
                     updated_at_utc = @updatedAtUtc
-                WHERE id = @id
-                  AND user_id = @userId;
+                WHERE id = @id;
                 """;
 
             note.UpdatedAtUtc = DateTime.UtcNow;

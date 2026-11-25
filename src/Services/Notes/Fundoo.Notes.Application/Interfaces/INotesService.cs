@@ -23,6 +23,8 @@ namespace Fundoo.Notes.Application.Interfaces
 
         Task<bool> UpdateAsync(Note note, CancellationToken cancellationToken = default);
 
+        Task<bool> UpdateWithCollaboratorCheckAsync(Note note, string userEmail, CancellationToken cancellationToken = default);
+
         Task<bool> SetArchivedAsync(Guid noteId, Guid userId, bool isArchived,
             CancellationToken cancellationToken = default);
 

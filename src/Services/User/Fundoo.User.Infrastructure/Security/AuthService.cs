@@ -122,11 +122,36 @@ namespace Fundoo.User.Infrastructure.Security
 
             var accessToken = _tokenService.CreateAccessToken(user);
 
+            var rawToken = Convert.ToHexString(
+                RandomNumberGenerator.GetBytes(32));
+            var tokenHash = Convert.ToHexString(
+                SHA256.HashData(Encoding.UTF8.GetBytes(rawToken)));
+            var now = DateTime.UtcNow;
+            var expiry = now.AddDays(30);
+
+            var refreshTokenEntity = new RefreshToken
+            {
+                Id = Guid.NewGuid(),
+                UserId = user.Id,
+                FamilyId = Guid.NewGuid(),
+                TokenHash = tokenHash,
+                CreatedAtUtc = now,
+                ExpiresAtUtc = expiry
+            };
+
+            await _userRepository.AddRefreshTokenAsync(
+                refreshTokenEntity,
+                cancellationToken);
+
+            await _userRepository.SaveChangesAsync(cancellationToken);
+
             return new AuthResult
             {
                 IsSuccess = true,
                 Message = "Login successful.",
                 AccessToken = accessToken,
+                RefreshToken = rawToken,
+                RefreshTokenExpiresAtUtc = expiry,
                 UserId = user.Id
             };
         }
@@ -506,6 +531,21 @@ namespace Fundoo.User.Infrastructure.Security
                 RefreshToken = newRawToken,
                 RefreshTokenExpiresAtUtc = expiry
             };
+        }
+
+        public async Task<bool> RevokeRefreshTokenAsync(
+            string refreshToken,
+            CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(refreshToken)) return false;
+
+            var tokenHash = Convert.ToHexString(
+                SHA256.HashData(Encoding.UTF8.GetBytes(refreshToken)));
+
+            return await _userRepository.RevokeRefreshTokenByHashAsync(
+                tokenHash,
+                DateTime.UtcNow,
+                cancellationToken);
         }
 
         private bool NeedsPasswordRehash(AppUser user)

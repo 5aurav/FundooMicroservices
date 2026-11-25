@@ -163,6 +163,14 @@ CREATE TABLE IF NOT EXISTS note_labels (
     PRIMARY KEY (note_id, label_id)
 );
 CREATE INDEX IF NOT EXISTS ix_note_labels_label_id ON note_labels (label_id);
+CREATE TABLE IF NOT EXISTS note_collaborators (
+    id uuid PRIMARY KEY,
+    note_id uuid NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
+    collaborator_email varchar(255) NOT NULL,
+    added_at_utc timestamptz NOT NULL,
+    CONSTRAINT uq_note_collaborator UNIQUE (note_id, collaborator_email)
+);
+CREATE INDEX IF NOT EXISTS ix_note_collaborators_email ON note_collaborators (collaborator_email);
 ";
         await using var cmd = new Npgsql.NpgsqlCommand(ddl, conn);
         await cmd.ExecuteNonQueryAsync();

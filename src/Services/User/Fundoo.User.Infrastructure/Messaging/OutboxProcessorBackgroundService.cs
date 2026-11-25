@@ -1,9 +1,10 @@
-using Fundoo.Common.Messaging;
+﻿using Fundoo.Common.Messaging;
 using Fundoo.User.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Fundoo.User.Infrastructure.Messaging;
 
@@ -12,20 +13,29 @@ public class OutboxProcessorBackgroundService : BackgroundService
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IKafkaProducer _kafkaProducer;
     private readonly ILogger<OutboxProcessorBackgroundService> _logger;
+    private readonly bool _kafkaEnabled;
     private readonly TimeSpan _pollInterval = TimeSpan.FromSeconds(3);
 
     public OutboxProcessorBackgroundService(
         IServiceScopeFactory scopeFactory,
         IKafkaProducer kafkaProducer,
+        IOptions<KafkaSettings> kafkaOptions,
         ILogger<OutboxProcessorBackgroundService> logger)
     {
         _scopeFactory = scopeFactory;
         _kafkaProducer = kafkaProducer;
         _logger = logger;
+        _kafkaEnabled = kafkaOptions.Value.Enabled;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        if (!_kafkaEnabled)
+        {
+            _logger.LogWarning("Kafka is disabled. OutboxProcessorBackgroundService will not start.");
+            return;
+        }
+
         _logger.LogInformation("OutboxProcessorBackgroundService is starting.");
 
         while (!stoppingToken.IsCancellationRequested)
@@ -65,9 +75,7 @@ public class OutboxProcessorBackgroundService : BackgroundService
             .ToListAsync(cancellationToken);
 
         if (messages.Count == 0)
-        {
             return 0;
-        }
 
         foreach (var message in messages)
         {
@@ -94,7 +102,7 @@ public class OutboxProcessorBackgroundService : BackgroundService
             {
                 message.RetryCount++;
                 message.Error = $"Failed to dispatch to Kafka at {DateTime.UtcNow}";
-                _logger.LogWarning("Failed to dispatch outbox event {EventType} (Id: {Id}), retry count: {RetryCount}",
+                _logger.LogWarning("Failed to dispatch outbox event {EventType} (Id: {Id}), retry: {RetryCount}",
                     message.EventType, message.Id, message.RetryCount);
             }
         }

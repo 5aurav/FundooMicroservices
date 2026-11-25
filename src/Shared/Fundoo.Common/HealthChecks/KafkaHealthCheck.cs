@@ -1,4 +1,4 @@
-using Confluent.Kafka;
+﻿using Confluent.Kafka;
 using Fundoo.Common.Messaging;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
@@ -18,6 +18,11 @@ public class KafkaHealthCheck : IHealthCheck
         HealthCheckContext context,
         CancellationToken cancellationToken = default)
     {
+        if (!_settings.Enabled)
+        {
+            return Task.FromResult(HealthCheckResult.Healthy("Kafka is disabled (Kafka:Enabled=false)."));
+        }
+
         try
         {
             var config = new AdminClientConfig
@@ -39,7 +44,7 @@ public class KafkaHealthCheck : IHealthCheck
         }
         catch (Exception ex)
         {
-            return Task.FromResult(HealthCheckResult.Unhealthy("Kafka connection failed.", ex));
+            return Task.FromResult(HealthCheckResult.Degraded($"Kafka unavailable: {ex.Message}"));
         }
     }
 }

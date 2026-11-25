@@ -28,6 +28,10 @@ namespace Fundoo.User.Application.Abstractions
         Task<AuthResult> RefreshAccessTokenAsync(
             string refreshToken,
             CancellationToken cancellationToken = default);
+
+        Task<bool> RevokeRefreshTokenAsync(
+            string refreshToken,
+            CancellationToken cancellationToken = default);
     }
     public class AuthResult
     {

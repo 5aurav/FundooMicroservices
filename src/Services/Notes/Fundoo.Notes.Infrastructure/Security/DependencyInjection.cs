@@ -28,6 +28,10 @@ namespace Fundoo.Notes.Infrastructure
             // Label Service
             services.AddScoped<ILabelsService, LabelsService>();
 
+            // Collaborator Repository & Service
+            services.AddScoped<ICollaboratorRepository, CollaboratorRepository>();
+            services.AddScoped<ICollaboratorService, CollaboratorService>();
+
             return services;
         }
     }

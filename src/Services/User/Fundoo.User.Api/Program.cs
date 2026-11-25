@@ -84,13 +84,8 @@ try
         options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
         {
             Title = "Fundoo User API",
-            Version = "v1"
-        });
-
-        options.SwaggerDoc("v2", new Microsoft.OpenApi.Models.OpenApiInfo
-        {
-            Title = "Fundoo User API",
-            Version = "v2"
+            Version = "v1",
+            Description = "User Management, Authentication, Google OAuth 2.0 & 2FA"
         });
 
         options.DocInclusionPredicate((documentName, apiDescription) =>
@@ -176,11 +171,7 @@ try
     {
         options.SwaggerEndpoint(
             "/swagger/v1/swagger.json",
-            "Fundoo User API V1");
-
-        options.SwaggerEndpoint(
-            "/swagger/v2/swagger.json",
-            "Fundoo User API V2");
+            "Fundoo User API");
     });
 
     if (!app.Environment.IsProduction())

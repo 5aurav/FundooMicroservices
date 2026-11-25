@@ -1,4 +1,4 @@
-using Confluent.Kafka;
+﻿using Confluent.Kafka;
 using Fundoo.Common.Messaging;
 using Fundoo.Common.Messaging.Events;
 using Fundoo.Notification.Application.Abstractions;
@@ -33,6 +33,12 @@ public class KafkaNotificationConsumerService : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         await Task.Yield(); // Ensure background service starts without blocking bootstrap
+
+        if (!_settings.Enabled)
+        {
+            _logger.LogWarning("Kafka disabled. Consumer will not start.");
+            return;
+        }
 
         var config = new ConsumerConfig
         {

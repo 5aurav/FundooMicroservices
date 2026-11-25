@@ -116,21 +116,44 @@ app.MapHealthChecks(
         }
     });
 
-app.MapGet("/", () => Results.Redirect("/swagger"));
+app.MapGet("/", () => Results.Redirect("/swagger/index.html"));
+app.MapGet("/swagger", () => Results.Redirect("/swagger/index.html"));
 
 app.UseSwagger();
 app.UseSwaggerUI(options =>
 {
-    options.SwaggerEndpoint("/swagger/user-v1/swagger.json", "User API v1");
-    options.SwaggerEndpoint("/swagger/user-v2/swagger.json", "User API v2");
-    options.SwaggerEndpoint("/swagger/notes/swagger.json", "Notes API");
-    options.SwaggerEndpoint("/swagger/notification/swagger.json", "Notification API");
+    options.SwaggerEndpoint("/api-docs/user-v1/swagger.json", "User API");
+    options.SwaggerEndpoint("/api-docs/notes/swagger.json", "Notes API");
+    options.SwaggerEndpoint("/api-docs/notification/swagger.json", "Notification API");
     options.RoutePrefix = "swagger";
     options.DocumentTitle = "Fundoo Microservices Swagger Gateway";
 });
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.Use(async (context, next) =>
+{
+    if (context.Request.Path.Equals("/health", StringComparison.OrdinalIgnoreCase))
+    {
+        context.Response.ContentType = "application/json";
+        await context.Response.WriteAsync(JsonSerializer.Serialize(new
+        {
+            status = "Healthy",
+            service = "Fundoo.ApiGateway",
+            timestampUtc = DateTime.UtcNow
+        }));
+        return;
+    }
+
+    if (!context.Request.Headers.ContainsKey("X-Client-Id"))
+    {
+        var clientId = context.Connection.RemoteIpAddress?.ToString();
+        if (string.IsNullOrWhiteSpace(clientId)) clientId = "fundoo-browser-client";
+        context.Request.Headers["X-Client-Id"] = clientId;
+    }
+    await next();
+});
 
 await app.UseOcelot();
 

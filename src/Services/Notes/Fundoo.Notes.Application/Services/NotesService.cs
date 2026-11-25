@@ -6,10 +6,14 @@ namespace Fundoo.Notes.Application.Services
     public class NotesService : INotesService
     {
         private readonly INotesRepository _notesRepository;
+        private readonly ICollaboratorRepository _collaboratorRepository;
 
-        public NotesService(INotesRepository notesRepository)
+        public NotesService(
+            INotesRepository notesRepository,
+            ICollaboratorRepository collaboratorRepository)
         {
             _notesRepository = notesRepository;
+            _collaboratorRepository = collaboratorRepository;
         }
 
         public async Task<Note?> GetByIdAsync(Guid noteId, Guid userId,
@@ -84,6 +88,31 @@ namespace Fundoo.Notes.Application.Services
 
             return await _notesRepository.UpdateAsync(
                 existingNote, cancellationToken);
+        }
+
+        public async Task<bool> UpdateWithCollaboratorCheckAsync(Note note, string userEmail,
+            CancellationToken cancellationToken = default)
+        {
+            ValidateTitle(note.Title);
+
+            var existingNote = await _notesRepository.GetByIdDirectAsync(note.Id, cancellationToken);
+            if (existingNote is null || existingNote.IsTrashed)
+                return false;
+
+            // Allow if owner OR collaborator
+            var isOwner = existingNote.UserId == note.UserId;
+            var isCollab = !isOwner && !string.IsNullOrWhiteSpace(userEmail) &&
+                           await _collaboratorRepository.IsCollaboratorAsync(note.Id, userEmail, cancellationToken);
+
+            if (!isOwner && !isCollab)
+                return false;
+
+            existingNote.Title = note.Title.Trim();
+            existingNote.Content = note.Content;
+            existingNote.Color = note.Color;
+            existingNote.IsPinned = note.IsPinned;
+
+            return await _notesRepository.UpdateAsync(existingNote, cancellationToken);
         }
 
         public async Task<bool> SetArchivedAsync(Guid noteId, Guid userId, bool isArchived,

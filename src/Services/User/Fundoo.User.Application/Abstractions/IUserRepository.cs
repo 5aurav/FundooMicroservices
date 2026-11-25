@@ -45,6 +45,11 @@ namespace Fundoo.User.Application.Abstractions
             DateTime revokedAtUtc,
             CancellationToken cancellationToken = default);
 
+        Task<bool> RevokeRefreshTokenByHashAsync(
+            string tokenHash,
+            DateTime revokedAtUtc,
+            CancellationToken cancellationToken = default);
+
 
         Task<bool> RotateRefreshTokenAsync(
             Guid oldTokenId,

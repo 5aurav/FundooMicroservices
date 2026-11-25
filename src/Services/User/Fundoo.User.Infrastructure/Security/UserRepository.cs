@@ -223,6 +223,24 @@ namespace Fundoo.User.Infrastructure.Security
                     cancellationToken);
         }
 
+        public async Task<bool> RevokeRefreshTokenByHashAsync(
+            string tokenHash,
+            DateTime revokedAtUtc,
+            CancellationToken cancellationToken = default)
+        {
+            var updated = await _context.RefreshTokens
+                .Where(token =>
+                    token.TokenHash == tokenHash &&
+                    token.RevokedAtUtc == null)
+                .ExecuteUpdateAsync(
+                    setters => setters.SetProperty(
+                        token => token.RevokedAtUtc,
+                        revokedAtUtc),
+                    cancellationToken);
+
+            return updated > 0;
+        }
+
         public async Task<bool> RehashPasswordAsync(
             Guid userId,
             string newPasswordHash,

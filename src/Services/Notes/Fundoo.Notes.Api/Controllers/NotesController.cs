@@ -14,10 +14,12 @@ namespace Fundoo.Notes.Api.Controllers
     public class NotesController : ControllerBase
     {
         private readonly INotesService _notesService;
+        private readonly ICollaboratorService _collaboratorService;
 
-        public NotesController(INotesService notesService)
+        public NotesController(INotesService notesService, ICollaboratorService collaboratorService)
         {
             _notesService = notesService;
+            _collaboratorService = collaboratorService;
         }
 
         [HttpGet]
@@ -148,7 +150,15 @@ namespace Fundoo.Notes.Api.Controllers
             {
                 return Unauthorized(new
                 {
-                    message = "Invalid user ID in token."
+                    message = "Invalid user token."
+                });
+            }
+
+            if (!TryGetUserEmail(out var userEmail))
+            {
+                return Unauthorized(new
+                {
+                    message = "User email not found in token."
                 });
             }
 
@@ -162,8 +172,8 @@ namespace Fundoo.Notes.Api.Controllers
                 IsPinned = request.IsPinned
             };
 
-            var updated = await _notesService.UpdateAsync(
-                note, cancellationToken);
+            var updated = await _notesService.UpdateWithCollaboratorCheckAsync(
+                note, userEmail, cancellationToken);
 
             if (!updated)
             {
@@ -286,6 +296,64 @@ namespace Fundoo.Notes.Api.Controllers
                 isSuccess = true,
                 message = "Note permanently deleted."
             });
+        }
+
+        private bool TryGetUserEmail(out string email)
+        {
+            var emailClaim = User.FindFirst(ClaimTypes.Email) ?? User.FindFirst("email");
+            email = emailClaim?.Value ?? string.Empty;
+            return !string.IsNullOrEmpty(email);
+        }
+
+        [HttpGet("{id:guid}/collaborators")]
+        public async Task<IActionResult> GetCollaborators(Guid id, CancellationToken cancellationToken)
+        {
+            if (!TryGetUserId(out var userId))
+                return Unauthorized(new { message = "Invalid user token." });
+
+            if (!TryGetUserEmail(out var userEmail))
+                return Unauthorized(new { message = "User email not found in token." });
+
+            var collaborators = await _collaboratorService.GetCollaboratorsAsync(id, userId, userEmail, cancellationToken);
+            var emails = collaborators.Select(c => c.CollaboratorEmail).ToList();
+            return Ok(new { isSuccess = true, data = emails });
+        }
+
+        [HttpPost("{id:guid}/collaborators")]
+        public async Task<IActionResult> AddCollaborator(Guid id, [FromBody] AddCollaboratorRequest request, CancellationToken cancellationToken)
+        {
+            if (!TryGetUserId(out var userId))
+                return Unauthorized(new { message = "Invalid user token." });
+
+            var added = await _collaboratorService.AddCollaboratorAsync(id, userId, request.Email, cancellationToken);
+            if (!added)
+                return BadRequest(new { message = "Failed to add collaborator. Ensure you are the owner and email is valid." });
+
+            return Ok(new { isSuccess = true, message = "Collaborator added." });
+        }
+
+        [HttpDelete("{id:guid}/collaborators")]
+        public async Task<IActionResult> RemoveCollaborator(Guid id, [FromBody] AddCollaboratorRequest request, CancellationToken cancellationToken)
+        {
+            if (!TryGetUserId(out var userId))
+                return Unauthorized(new { message = "Invalid user token." });
+
+            var removed = await _collaboratorService.RemoveCollaboratorAsync(id, userId, request.Email, cancellationToken);
+            if (!removed)
+                return BadRequest(new { message = "Failed to remove collaborator." });
+
+            return Ok(new { isSuccess = true, message = "Collaborator removed." });
+        }
+
+        [HttpGet("collaborated")]
+        public async Task<IActionResult> GetCollaboratedNotes(CancellationToken cancellationToken)
+        {
+            if (!TryGetUserEmail(out var userEmail))
+                return Unauthorized(new { message = "User email not found in token." });
+
+            var notes = await _collaboratorService.GetCollaboratedNotesAsync(userEmail, cancellationToken);
+            var response = notes.Select(MapToResponse).ToList();
+            return Ok(new { isSuccess = true, data = response });
         }
 
         private bool TryGetUserId(out Guid userId)
